@@ -9,18 +9,22 @@ from clock import Clock
 from events import EventHandler
 from interface import Widget, Button, Switch, KeyTooltip
 from settings import DIM, FPS, KEYS, FONT, TILE, DELAY, VOLUME, SCORE, MAX_LEVEL, STARTING_LEVEL, \
-    KILLER_MODIFIER, vec
+    KILLER_MODIFIER, vec, parser
 
 
 class Engine:
     display = pygame.display.set_mode(DIM["screen"], pygame.NOFRAME)
     IMAGES = None
     TITLE = "Tetris"
+    ICON = pygame.image.load('../data/tetris.png')
 
     def __init__(self):
 
         Mixer.set_volume(VOLUME)
         self.window_handle = pygame.display.get_wm_info()['window']
+
+        pygame.display.set_icon(self.ICON)
+        pygame.display.set_caption(self.TITLE)
 
         self.graphics = Graphics(self)
 
@@ -49,6 +53,10 @@ class Engine:
         self.next = Next(self, DIM['next'])
         self.field = Field(self, DIM['field'], self.next())
         self.next_figure = self.next()
+
+        self.background_shade = self.field.background
+        self.background_shade.set_alpha(160)
+        self.background_shade.fill((0, 0, 0))
 
         self.logic_timer.modifier = 1
 
@@ -79,6 +87,9 @@ class Engine:
             self.reset()
         if self.event_handler['theme', 'press']:
             self.theme_switch.flip()
+
+        if not pygame.key.get_focused():  # or not pygame.mouse.get_focused():  # (only for extreme focus mode)
+            self.running[1] = True
 
         if self.music_switch.clicked:
             if self.music_switch.state:
@@ -172,12 +183,16 @@ class Engine:
         self.write(str(self.level), self.graphics["text_1"], DIM["level"] + vec(0, TILE), self.display, True)
 
         if self.running[2]:
+            self.display.blit(self.background_shade, (DIM["field"][0], DIM["field"][1]))
+            gameo_label = f'press "{str(parser.get("KEYS", "reset"))}"'
             self.write("GAME OVER", self.graphics["text_1"], DIM["label"], self.display, True)
-            self.write('press "r"', self.graphics["text_2"], DIM["label"] + vec(0, TILE * 1.5), self.display)
+            self.write(gameo_label, self.graphics["text_2"], DIM["label"] + vec(0, TILE * 1.5), self.display)
             self.write("to restart", self.graphics["text_2"], DIM["label"] + vec(0, TILE * 2.5), self.display)
         elif self.running[1]:
+            self.display.blit(self.background_shade, (DIM["field"][0], DIM["field"][1]))
+            pause_label = f'press "{str(parser.get("KEYS", "pause"))}"'
             self.write("PAUSED", self.graphics["text_1"], DIM["label"], self.display, True)
-            self.write('press "p"', self.graphics["text_2"], DIM["label"] + vec(0, TILE * 1.5), self.display)
+            self.write(pause_label, self.graphics["text_2"], DIM["label"] + vec(0, TILE * 1.5), self.display)
             self.write("to continue", self.graphics["text_2"], DIM["label"] + vec(0, TILE * 2.5), self.display)
 
         self.key_tooltip.render(self.display)
